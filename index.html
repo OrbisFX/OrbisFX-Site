@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyFX | Advanced Graphics Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0?dev';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client?dev';
+        import { 
+            Menu, X, ArrowRight, Download, Cpu, Layers, Zap, Terminal, 
+            ChevronDown, Sparkles, Box, ScanLine, Droplets, Sun, Activity, Eye, Code2
+        } from 'https://esm.sh/lucide-react@0.263.1?dev';
+
+        const App = () => {
+            const [isScrolled, setIsScrolled] = useState(false);
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+            const [activeCategory, setActiveCategory] = useState('all');
+            
+            // State for the Pipeline Section (formerly Process)
+            const [activePipelineStep, setActivePipelineStep] = useState(0);
+            const [scanKey, setScanKey] = useState(0);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    setIsScrolled(window.scrollY > 50);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            useEffect(() => {
+                // Re-trigger scan animation when hitting the Depth Analysis step
+                if (activePipelineStep === 2) { // Updated to step 2 (Depth)
+                    setScanKey(prev => prev + 1);
+                }
+            }, [activePipelineStep]);
+
+            // --- Data: Visual Modules ---
+            const fxModules = [
+                {
+                    id: 1,
+                    title: "Organic Diffusion (SSS)",
+                    category: "materials",
+                    description: "Screen-space subsurface scattering for realistic skin and vegetation interaction.",
+                    src: "https://images.unsplash.com/photo-1615672917235-847899e7439f?q=80&w=2574&auto=format&fit=crop", 
+                    tags: ["Material Pass", "SSS"]
+                },
+                {
+                    id: 2,
+                    title: "Volumetric Integration",
+                    category: "atmosphere",
+                    description: "Global fog density that respects scene depth and light sources.",
+                    src: "https://images.unsplash.com/photo-1485627941502-d2e6429fa8af?q=80&w=2573&auto=format&fit=crop", 
+                    tags: ["Atmosphere", "Lighting"]
+                },
+                {
+                    id: 3,
+                    title: "Dynamic Occlusion",
+                    category: "depth",
+                    description: "Next-gen ambient occlusion derived from high-precision depth buffers.",
+                    src: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop", 
+                    tags: ["Shadows", "Depth"]
+                },
+                {
+                    id: 4,
+                    title: "Cinematic Grade",
+                    category: "post",
+                    description: "Film-stock emulation and tonemapping specifically tuned for Hytale's palette.",
+                    src: "https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2574&auto=format&fit=crop", 
+                    tags: ["Color", "LUTs"]
+                }
+            ];
+
+            const categories = [
+                { id: 'all', label: 'All Modules' },
+                { id: 'materials', label: 'Materials' },
+                { id: 'atmosphere', label: 'Atmosphere' },
+                { id: 'depth', label: 'Depth FX' }
+            ];
+
+            // --- Data: The Pipeline Steps ---
+            // REWORKED: Updated to match the provided debug images and new 5-step flow
+            const pipelineSteps = [
+                {
+                    id: 0,
+                    title: "Vanilla Render",
+                    icon: <Box size={20} />,
+                    description: "The raw frame output from the Hytale engine. HyFX intercepts this buffer before the UI layer is drawn to ensure a clean canvas.",
+                    src: "images/vanilla.png" 
+                },
+                {
+                    id: 1,
+                    title: "Geometry Injection",
+                    icon: <Terminal size={20} />,
+                    description: "We hook into the driver level to access vertex data, building a real-time wireframe model that aligns perfectly with the voxel grid.",
+                    src: "images/wire.png" 
+                },
+                {
+                    id: 2,
+                    title: "Depth Linearization",
+                    icon: <ScanLine size={20} />,
+                    description: "The Z-buffer is extracted and linearized to create a precise depth map. This allows effects like fog and DOF to calculate distance accurately.",
+                    src: "images/depth.png" 
+                },
+                {
+                    id: 3,
+                    title: "Global Illumination",
+                    icon: <Sun size={20} />,
+                    description: "Using the depth and normal data, we calculate screen-space ambient occlusion (SSAO) to simulate realistic soft shadowing.",
+                    src: "images/ao.png" 
+                },
+                {
+                    id: 4,
+                    title: "Final Composition",
+                    icon: <Sparkles size={20} />,
+                    description: "The lighting passes are composited with color grading, bloom, and anti-aliasing to produce the final refined image.",
+                    src: "images/final.png" 
+                }
+            ];
+
+            const filteredModules = activeCategory === 'all' 
+                ? fxModules 
+                : fxModules.filter(item => item.category === activeCategory);
+
+            return (
+                <div className="min-h-screen bg-[#0e0e10] text-[#eeeae3] font-sans selection:bg-[#0092cc] selection:text-white pb-10">
+                
+                <style>{`
+                    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap');
+                    
+                    .font-hytale { font-family: 'Cinzel', serif; }
+                    .font-mono { font-family: 'JetBrains Mono', monospace; }
+                    .font-body { font-family: 'Open Sans', sans-serif; }
+
+                    /* Hytale/HyFX Button Styles */
+                    .btn-hyfx-primary {
+                        background: linear-gradient(to bottom, #00b0f4, #0080b0);
+                        border: 2px solid #005070;
+                        box-shadow: inset 0 2px 0 rgba(255,255,255,0.3), 0 4px 0 #004060;
+                        transition: transform 0.1s, filter 0.2s;
+                    }
+                    .btn-hyfx-primary:hover {
+                        filter: brightness(1.1);
+                    }
+                    .btn-hyfx-primary:active {
+                        transform: translateY(2px);
+                        box-shadow: inset 0 2px 0 rgba(255,255,255,0.3), 0 2px 0 #004060;
+                    }
+
+                    .btn-hyfx-secondary {
+                        background: linear-gradient(to bottom, #5c5c5c, #3a3a3a);
+                        border: 2px solid #2a2a2a;
+                        box-shadow: inset 0 2px 0 rgba(255,255,255,0.1), 0 4px 0 #1a1a1a;
+                        color: #eeeae3;
+                    }
+                    .btn-hyfx-secondary:active {
+                        transform: translateY(2px);
+                        box-shadow: inset 0 2px 0 rgba(255,255,255,0.1), 0 2px 0 #1a1a1a;
+                    }
+
+                    /* Scan Animation for Depth Step */
+                    @keyframes scan-down {
+                        0% { top: -10%; opacity: 0; }
+                        10% { opacity: 1; }
+                        90% { opacity: 1; }
+                        100% { top: 110%; opacity: 0; }
+                    }
+                    .animate-scan {
+                        animation: scan-down 1.5s ease-in-out forwards;
+                        animation-iteration-count: 1;
+                    }
+
+                    /* Glitch Text Effect Hover */
+                    .glitch-hover:hover {
+                        animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+                        color: #0092cc;
+                    }
+                    @keyframes glitch {
+                        0% { transform: translate(0) }
+                        20% { transform: translate(-2px, 2px) }
+                        40% { transform: translate(-2px, -2px) }
+                        60% { transform: translate(2px, 2px) }
+                        80% { transform: translate(2px, -2px) }
+                        100% { transform: translate(0) }
+                    }
+                `}</style>
+
+                {/* --- Navigation --- */}
+                <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-[#0a0a0c]/95 backdrop-blur-md border-b-4 border-[#2d2d30] py-2' : 'bg-transparent py-6'}`}>
+                    <div className="container mx-auto px-6 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            {/* Logo Mark - Technical/Geometric */}
+                            <div className="w-10 h-10 bg-[#0092cc] flex items-center justify-center shadow-[0_0_15px_rgba(0,146,204,0.5)] rounded-sm">
+                                <span className="font-hytale font-black text-white text-xl">H</span>
+                            </div>
+                            <span className="font-hytale font-bold text-2xl tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">HyFX</span>
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-8 font-hytale font-bold text-sm tracking-widest text-[#b0b0b0]">
+                            <a href="#pipeline" className="hover:text-white transition-colors uppercase">Pipeline</a>
+                            <a href="#modules" className="hover:text-white transition-colors uppercase">Modules</a>
+                            <a href="#core" className="hover:text-white transition-colors uppercase">Technology</a>
+                            <button className="btn-hyfx-primary px-6 py-2 text-white font-bold uppercase tracking-wider text-sm rounded-sm flex items-center gap-2">
+                                <Download size={16} /> Installer
+                            </button>
+                        </div>
+
+                        <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                        </button>
+                    </div>
+
+                    {mobileMenuOpen && (
+                        <div className="md:hidden absolute top-full left-0 w-full bg-[#0a0a0c] border-b-4 border-[#2d2d30] p-6 flex flex-col gap-4 shadow-xl">
+                            <a href="#pipeline" className="text-lg font-hytale hover:text-[#0092cc]" onClick={() => setMobileMenuOpen(false)}>Pipeline</a>
+                            <a href="#modules" className="text-lg font-hytale hover:text-[#0092cc]" onClick={() => setMobileMenuOpen(false)}>Modules</a>
+                            <a href="#core" className="text-lg font-hytale hover:text-[#0092cc]" onClick={() => setMobileMenuOpen(false)}>Technology</a>
+                            <button className="text-lg font-hytale text-[#0092cc] text-left" onClick={() => setMobileMenuOpen(false)}>Download Installer</button>
+                        </div>
+                    )}
+                </nav>
+
+                {/* --- Hero Section --- */}
+                <section className="relative h-screen flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 z-0">
+                        {/* Using the FINAL image as the hero background for maximum impact */}
+                        <img 
+                            src="images/final.png" 
+                            alt="Hero Background" 
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-[#0e0e10]/60 to-black/30" />
+                        
+                        {/* Grid Overlay for 'Tech' feel */}
+                        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,146,204,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,146,204,0.03)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+                    </div>
+
+                    <div className="container mx-auto px-6 relative z-10 text-center mt-10">
+                        <div className="inline-flex items-center gap-2 mb-6 px-4 py-1 bg-[#0092cc]/10 border border-[#0092cc] backdrop-blur-sm text-[#0092cc] text-xs font-bold tracking-[0.2em] uppercase rounded-sm">
+                            <div className="w-2 h-2 bg-[#0092cc] rounded-full animate-pulse"></div>
+                            v1.0 Release Candidate
+                        </div>
+                        
+                        <h1 className="font-hytale font-black text-5xl md:text-7xl lg:text-8xl text-white mb-6 drop-shadow-[0_5px_10px_rgba(0,0,0,1)] leading-[0.9] tracking-tight">
+                            VISUAL FIDELITY <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#fcd34d] to-[#d97706] drop-shadow-[0_2px_15px_rgba(252,211,77,0.2)]">REDEFINED</span>
+                        </h1>
+                        
+                        <p className="font-body text-lg md:text-xl text-[#d4d4d4] max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-md">
+                            A proprietary rendering extension for Hytale. <br/>
+                            HyFX bridges the gap between voxel geometry and next-gen atmospherics through advanced pipeline injection.
+                        </p>
+                        
+                        <div className="flex flex-col md:flex-row gap-6 justify-center">
+                            <button className="btn-hyfx-primary px-8 py-4 text-white font-hytale font-bold text-lg rounded-sm flex items-center justify-center gap-2">
+                                <Download size={20} /> Download Installer
+                            </button>
+                            <button className="btn-hyfx-secondary px-8 py-4 font-hytale font-bold text-lg rounded-sm flex items-center justify-center gap-2">
+                                <Terminal size={18} /> View Documentation
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce text-[#0092cc]">
+                        <ChevronDown size={32} />
+                    </div>
+                </section>
+
+                {/* --- Pipeline Breakdown Section (Formerly Process) --- */}
+                <section id="pipeline" className="py-24 bg-[#0e0e10] relative bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
+                    <div className="container mx-auto px-6 relative z-10">
+                        <div className="text-center mb-16">
+                            <h2 className="font-hytale text-4xl text-white mb-4 drop-shadow-lg">The <span className="text-[#0092cc]">Injection</span> Pipeline</h2>
+                            <p className="text-[#9ca3af] max-w-2xl mx-auto font-body">
+                                Unlike standard presets, HyFX operates as a render hook. Inspect each stage of the shading process below.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch h-auto lg:h-[600px]">
+                            
+                            {/* Left: Interactive Steps List */}
+                            <div className="w-full lg:w-1/3 flex flex-col gap-3">
+                                {pipelineSteps.map((step, index) => (
+                                    <button
+                                        key={step.id}
+                                        onClick={() => setActivePipelineStep(index)}
+                                        className={`relative p-5 rounded-sm border-2 text-left transition-all duration-200 group ${
+                                            activePipelineStep === index 
+                                            ? 'bg-[#1a1a1e] border-[#0092cc] shadow-[0_0_15px_rgba(0,146,204,0.2)]' 
+                                            : 'bg-[#141417] border-[#2d2d30] hover:border-[#4a4a50] hover:bg-[#1a1a1e]'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-2 rounded-sm border border-opacity-20 transition-colors ${
+                                                activePipelineStep === index 
+                                                ? 'bg-[#004060] border-[#0092cc] text-[#00b0f4]' 
+                                                : 'bg-[#0a0a0c] border-white text-[#6b7280] group-hover:text-[#9ca3af]'
+                                            }`}>
+                                                {step.icon}
+                                            </div>
+                                            <div>
+                                                <h3 className={`font-bold font-hytale text-lg tracking-wide ${
+                                                    activePipelineStep === index ? 'text-[#fcd34d]' : 'text-[#b0b0b0] group-hover:text-[#d4d4d4]'
+                                                }`}>
+                                                    {step.title}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className={`grid transition-all duration-300 ease-in-out ${
+                                            activePipelineStep === index ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'
+                                        }`}>
+                                            <div className="overflow-hidden">
+                                                <p className="text-sm text-[#9ca3af] font-body leading-relaxed pl-1">
+                                                    {step.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Right: Image Display with Frame */}
+                            <div className="w-full lg:w-2/3 relative rounded-sm overflow-hidden border-[6px] border-[#2d2d30] bg-[#0a0a0c] shadow-2xl">
+                                {pipelineSteps.map((step, index) => (
+                                    <div 
+                                        key={step.id}
+                                        className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                                            activePipelineStep === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                                        }`}
+                                    >
+                                        {/* Added onerror fallback to a placeholder if local images aren't present during preview */}
+                                        <img 
+                                            src={step.src} 
+                                            alt={step.title} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null; 
+                                                e.target.src = 'https://images.unsplash.com/photo-1614726365723-49cfae96c694?q=80&w=2000&auto=format&fit=crop'; // Fallback Glitch/Tech texture
+                                            }}
+                                        />
+
+                                        {/* --- TECH OVERLAY FX --- */}
+                                        {/* Scan Effect for Step 2 (Depth) - Updated from Step 1 */}
+                                        {step.id === 2 && activePipelineStep === 2 && (
+                                            <div key={scanKey} className="absolute inset-0 pointer-events-none z-30">
+                                                <div className="w-full h-[2px] bg-[#00ff9d] shadow-[0_0_20px_#00ff9d] animate-scan absolute left-0"></div>
+                                                <div className="absolute top-4 right-4 text-[#00ff9d] font-mono text-xs bg-black/50 p-1">DEPTH_BUFFER: LINEARIZED</div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Wireframe Overlay Text for Step 1 (Injection) */}
+                                        {step.id === 1 && activePipelineStep === 1 && (
+                                             <div className="absolute top-4 left-4 text-[#0092cc] font-mono text-xs bg-black/50 p-1 z-30">
+                                                <div>GEO_INJECTION: ACTIVE</div>
+                                                <div>VERT_COUNT: 12,402</div>
+                                             </div>
+                                        )}
+
+                                        {/* Label Overlay */}
+                                        <div className="absolute bottom-6 left-6 bg-[#0a0a0c]/90 border-l-4 border-[#0092cc] px-4 py-2 text-white font-mono text-xs z-20 shadow-lg">
+                                            <div className="text-[#0092cc] font-bold mb-1">Pass 0{index + 1}</div>
+                                            <div className="font-bold text-lg uppercase">{step.title}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {/* UI Corners */}
+                                <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#fcd34d] z-20 opacity-50"></div>
+                                <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#fcd34d] z-20 opacity-50"></div>
+                                <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#fcd34d] z-20 opacity-50"></div>
+                                <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#fcd34d] z-20 opacity-50"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- Modules Showcase (Formerly Gallery) --- */}
+                <section id="modules" className="py-24 bg-[#0a0a0c]">
+                    <div className="container mx-auto px-6">
+                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-[#2d2d30] pb-6">
+                            <div>
+                                <h2 className="font-hytale text-4xl text-white mb-2">Visual Modules</h2>
+                                <p className="text-[#9ca3af] font-body">Browse the active effect libraries included in the HyFX suite.</p>
+                            </div>
+                            
+                            <div className="flex gap-3 mt-6 md:mt-0 overflow-x-auto pb-2 md:pb-0">
+                                {categories.map(cat => (
+                                    <button 
+                                        key={cat.id}
+                                        onClick={() => setActiveCategory(cat.id)}
+                                        className={`px-6 py-2 rounded-sm text-sm font-bold font-hytale uppercase tracking-wider transition-all whitespace-nowrap border-b-2 ${
+                                            activeCategory === cat.id 
+                                            ? 'bg-[#1c1c20] text-[#fcd34d] border-[#fcd34d]' 
+                                            : 'bg-transparent text-[#6b7280] border-transparent hover:text-white hover:bg-[#1c1c20]'
+                                        }`}
+                                    >
+                                        {cat.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+                            {filteredModules.map(item => (
+                                <div key={item.id} className="group relative rounded-sm overflow-hidden bg-[#1c1c20] border-2 border-[#2d2d30] hover:border-[#0092cc] transition-all duration-300 shadow-xl">
+                                    <div className="aspect-[16/9] overflow-hidden">
+                                        <img 
+                                            src={item.src} 
+                                            alt={item.title} 
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-transparent to-transparent opacity-90 group-hover:opacity-60 transition-opacity" />
+                                    </div>
+                                    
+                                    <div className="absolute bottom-0 left-0 w-full p-6 translate-y-2 group-hover:translate-y-0 transition-transform">
+                                        <div className="flex justify-between items-end">
+                                            <div>
+                                                <div className="flex gap-2 mb-2">
+                                                    {item.tags.map(tag => (
+                                                        <span key={tag} className="text-[10px] uppercase font-bold tracking-wider text-[#0092cc] bg-[#002030] px-2 py-1 rounded-sm border border-[#004060]">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <h3 className="text-2xl font-hytale text-white mb-1 group-hover:text-[#fcd34d] transition-colors drop-shadow-md">{item.title}</h3>
+                                                <p className="text-[#9ca3af] font-body text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 h-0 group-hover:h-auto pb-2">
+                                                    {item.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- Core Technology (Formerly Services) --- */}
+                <section id="core" className="py-24 bg-[#0e0e10] border-t-4 border-[#1c1c20]">
+                    <div className="container mx-auto px-6">
+                        <div className="text-center mb-16">
+                            <h2 className="font-hytale text-4xl text-white mb-4">Core Technology</h2>
+                            <p className="text-[#9ca3af] max-w-xl mx-auto font-body">
+                                HyFX is more than a preset. It is a managed software environment designed for performance and stability.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Feature 1: The Installer */}
+                            <div className="bg-[#141417] border-2 border-[#2d2d30] p-8 rounded-sm hover:border-[#0092cc] transition-all duration-300 group hover:-translate-y-1">
+                                <div className="w-14 h-14 bg-[#002030] border border-[#004060] rounded-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Box className="text-[#0092cc]" size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold font-hytale text-white mb-3">Automated Deployment</h3>
+                                <p className="text-[#9ca3af] text-sm leading-relaxed mb-6 font-body">
+                                    Forget dragging DLLs into random folders. The HyFX Installer detects your Hytale installation, backs up configurations, and injects the pipeline safely.
+                                </p>
+                                <ul className="space-y-2 text-sm text-[#d4d4d4] mb-6 font-bold font-mono">
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#0092cc]"/> One-Click Install</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#0092cc]"/> Auto-Directory Detect</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#0092cc]"/> Safe Uninstall</li>
+                                </ul>
+                            </div>
+
+                            {/* Feature 2: In-House Shaders */}
+                            <div className="bg-gradient-to-b from-[#1a1a1e] to-[#141417] border-2 border-[#fcd34d]/50 p-8 rounded-sm relative overflow-hidden shadow-2xl shadow-[#fcd34d]/5 hover:scale-105 transition-transform duration-300">
+                                <div className="absolute top-0 right-0 bg-[#fcd34d] text-[#1a1a1e] text-xs font-bold px-3 py-1 rounded-bl-sm font-hytale tracking-wider">PROPRIETARY</div>
+                                <div className="w-14 h-14 bg-[#3a2a10] border border-[#5a4a20] rounded-sm flex items-center justify-center mb-6">
+                                    <Code2 className="text-[#fcd34d]" size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold font-hytale text-white mb-3">Custom Shader Backend</h3>
+                                <p className="text-[#9ca3af] text-sm leading-relaxed mb-6 font-body">
+                                    HyFX runs on bespoke code, not just generic libraries. Our "Material-Aware" engine introduces features standard ReShade cannot offer.
+                                </p>
+                                <ul className="space-y-2 text-sm text-[#d4d4d4] mb-6 font-bold font-mono">
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#fcd34d]"/> Subsurface Scattering</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#fcd34d]"/> Scene Relighting</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#fcd34d]"/> Volumetric Fog</li>
+                                </ul>
+                            </div>
+
+                            {/* Feature 3: Optimization */}
+                            <div className="bg-[#141417] border-2 border-[#2d2d30] p-8 rounded-sm hover:border-[#8b5cf6] transition-all duration-300 group hover:-translate-y-1">
+                                <div className="w-14 h-14 bg-[#2e1065] border border-[#4c1d95] rounded-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Cpu className="text-[#a78bfa]" size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold font-hytale text-white mb-3">Optimized Cache</h3>
+                                <p className="text-[#9ca3af] text-sm leading-relaxed mb-6 font-body">
+                                    HyFX ships with pre-compiled shaders tuned specifically for Hytale's voxel geometry, minimizing frame time impact.
+                                </p>
+                                <ul className="space-y-2 text-sm text-[#d4d4d4] mb-6 font-bold font-mono">
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#8b5cf6]"/> Zero Compile Stutter</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#8b5cf6]"/> Geometry Aware</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#8b5cf6]"/> High FPS Target</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- R&D / Beta Teaser --- */}
+                <section className="py-20 bg-[#050505] border-t border-[#1c1c20] relative overflow-hidden">
+                    {/* Ambient Background Glow */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#0092cc] rounded-full blur-[120px] opacity-10 pointer-events-none"></div>
+
+                    <div className="container mx-auto px-6 relative z-10">
+                        <div className="bg-[#0a0a0c]/80 backdrop-blur-md border border-[#2d2d30] p-8 md:p-12 rounded-sm flex flex-col md:flex-row items-center gap-8 md:gap-16 shadow-2xl">
+                            
+                            {/* Left: Icon/Visual */}
+                            <div className="relative shrink-0">
+                                <div className="w-24 h-24 bg-[#1a1a1e] border-2 border-[#2d2d30] rounded-sm flex items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-[#0092cc]/20 to-transparent opacity-50"></div>
+                                    <Sparkles className="text-[#0092cc] relative z-10 animate-pulse" size={40} />
+                                    
+                                    {/* Tech scan lines overlay */}
+                                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_2px,3px_100%] pointer-events-none"></div>
+                                </div>
+                                <div className="absolute -bottom-3 -right-3 bg-[#fcd34d] text-[#0a0a0c] text-[10px] font-bold px-2 py-1 font-hytale uppercase tracking-widest rounded-sm border border-[#fff]">
+                                    Closed Beta
+                                </div>
+                            </div>
+
+                            {/* Right: Content */}
+                            <div className="flex-1 text-center md:text-left">
+                                <div className="flex flex-col md:flex-row items-center md:items-start gap-4 mb-4">
+                                    <h2 className="font-hytale text-3xl text-white">Next: <span className="text-[#0092cc] glitch-hover cursor-default">RAY_TRACING</span></h2>
+                                    <span className="bg-[#1c1c20] border border-[#2d2d30] text-[#9ca3af] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-[#fcd34d] animate-pulse"></span> In Development
+                                    </span>
+                                </div>
+                                
+                                <p className="text-[#9ca3af] font-body mb-6 leading-relaxed">
+                                    We are currently testing full path-tracing injection for Hytale. This experimental build requires high-end hardware and is currently available to Supporters only.
+                                </p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3 text-sm text-[#d4d4d4] bg-[#141417] p-3 rounded-sm border border-[#2d2d30]">
+                                        <Layers size={16} className="text-[#0092cc]" />
+                                        <span>Path Tracing Core</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-[#d4d4d4] bg-[#141417] p-3 rounded-sm border border-[#2d2d30]">
+                                        <Activity size={16} className="text-[#0092cc]" />
+                                        <span>Denoiser Integration</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- Footer --- */}
+                <section id="contact" className="py-24 relative overflow-hidden bg-[#050505]">
+                    <div className="absolute inset-0 bg-[#0092cc]/5"></div>
+                    <div className="container mx-auto px-6 relative z-10 text-center">
+                        <h2 className="font-hytale text-4xl md:text-5xl text-white mb-8 drop-shadow-lg">Enhance Your World</h2>
+                        <div className="flex flex-col items-center gap-6">
+                            <button className="btn-hyfx-primary px-10 py-5 rounded-sm font-bold font-hytale text-xl text-white hover:scale-105 transition-transform shadow-xl flex items-center gap-3">
+                                <Download className="text-white" />
+                                Download HyFX v1.0
+                            </button>
+                            <p className="text-[#6b7280] text-sm uppercase tracking-widest font-bold">Requires Hytale Client v.1.0+</p>
+                        </div>
+
+                        <div className="mt-24 pt-8 border-t border-[#2d2d30] flex flex-col md:flex-row justify-between items-center text-[#6b7280] text-sm font-body">
+                            <div className="text-left">
+                                <p>&copy; 2025 HyFX Team.</p>
+                                <p className="mt-2 text-xs max-w-md opacity-60">
+                                    HyFX is a third-party modification and is not affiliated with Hypixel Studios.
+                                    ReShade is a trademark of crosire.
+                                </p>
+                            </div>
+                            <div className="flex gap-6 mt-4 md:mt-0 font-bold uppercase tracking-wider text-xs">
+                                <a href="#" className="hover:text-[#0092cc] transition-colors">GitHub</a>
+                                <a href="#" className="hover:text-[#0092cc] transition-colors">Discord</a>
+                                <a href="#" className="hover:text-[#0092cc] transition-colors">Documentation</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
